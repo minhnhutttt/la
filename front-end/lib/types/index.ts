@@ -8,3 +8,4 @@ export * from './reviews';
 export * from './auth';
 export * from './notifications';
 export * from './articles'; 
+export * from './search'; 

@@ -1,294 +1,275 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
-import { useTranslation } from 'react-i18next'
-import LanguageSelector from './LanguageSelector'
-import { useAuthStore } from '@/store/auth-store'
-import {getFullName, User} from "@/lib/types";
-import { Button } from '@/components/ui/button';
 
-export default function Header({ showLanguageSelector = true }: { showLanguageSelector?: boolean } = {}) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [authState, setAuthState] = useState<{ user: User | null, isAuthenticated: boolean }>({ user: null, isAuthenticated: false })
-  const pathname = usePathname()
-  const router = useRouter()
-  const { t } = useTranslation()
-  const { user, isAuthenticated, logout, checkAuth } = useAuthStore()
-  const isLawyer = authState.user?.role === 'lawyer'
-  const isAdmin = authState.user?.role === 'admin'
-  const hasNewAppointment = authState.user?.has_new_appointment === true
+export default function Header() {
+  const [open, setOpen] = useState(false)
 
-  const isActive = (path: string) => pathname === path
-
-  // Update local state whenever auth state changes
   useEffect(() => {
-    setAuthState({ user, isAuthenticated })
-  }, [user, isAuthenticated])
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
 
-  // Force auth check when component mounts or route changes
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth, pathname])
-
-  const handleLogout = async () => {
-    await logout()
-    router.refresh() // Force router refresh after logout
-  }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
 
   const list = [
     {
-      href: '/',
-      text: t('common.home'),
-      isAuthenticated: false
+      title: '弁護士検索',
+      items: [
+        {
+          href: '/search',
+          text: '弁護士を探す',
+        },
+        {
+          href: '/private/bookmark/lawyer/',
+          text: 'お気に入りの弁護士をみる',
+        },
+        {
+          href: '/private/view/lawyer/',
+          text: '閲覧した弁護士をみる',
+        },
+      ]
     },
     {
-      href: '/lawyers',
-      text: t('lawyers.findLawyers'),
-      isAuthenticated: false,
-      excludeForLawyer: true
+      title: 'みんなの法律相談',
+      items: [
+        {
+          href: '/bbs',
+          text: 'みんなの相談をみる',
+        },
+        {
+          href: '/bbs/question/',
+          text: '相談を投稿する',
+        },
+        {
+          href: '/sp/private/view/question/',
+          text: '閲覧した相談をみる',
+        },
+      ]
     },
     {
-      href: '/questions',
-      text: t('common.questions'),
-      isAuthenticated: false
+      title: '一括見積り',
+      items: [
+        {
+          href: '/estimate/',
+          text: '一括見積りをはじめる',
+        },
+        {
+          href: '/faq/316/',
+          text: '一括見積りのよくあるお問い合わせ ',
+        },
+      ]
     },
     {
-      href: '/articles',
-      text: t('common.articles'),
-      isAuthenticated: false
+      title: 'その他サービス',
+      items: [
+        {
+          href: '/bbs',
+          text: '弁護士ドットコムニュース',
+        },
+        {
+          href: '/mother/',
+          text: '妊娠中のお母さんのためのお悩み対処法 ',
+        },
+      ]
     },
-    // Removed appointments menu item as it's now integrated into profile
+    {
+      title: 'ヘルプ',
+      items: [
+        {
+          href: '/about',
+          text: 'はじめての方へ',
+        },
+        {
+          href: '/faq/',
+          text: 'よくあるお問い合わせ ',
+        },
+        {
+          href: '/rules/',
+          text: '利用規約 ',
+        },
+      ]
+    }
   ]
 
-  // Exclude "Find Lawyers" for lawyer users
-  const navList = list
-
   return (
-    <header className="bg-white shadow-sm relative z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex h-20 items-center justify-between">
-          {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="flex flex-col items-start">
-              <div className="text-sm mb-1 text-gray-600">弁護士へのチャット相談なら</div>
-              <Image
-                src="/images/logo.png"
-                alt="べんごレッチ"
-                width={160}
-                height={40}
-                className="h-12 w-auto"
-                priority
-              />
-            </Link>
-          </div>
+    <header className="bg-white shadow-sm relative z-50 py-4 px-2 [box-shadow:0_1px_4px_rgba(38,_34,_33,_.12)]">
+      <div className="w-full max-w-[980px] mx-auto flex items-center justify-between">
+        <Link href="/" className="flex flex-col items-start">
+          <Image
+            src="/images/logo.svg"
+            alt=""
+            width={360}
+            height={60}
+            className="md:w-[240px] w-[192px]"
+            priority
+          />
+        </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:block">
-            <ul className="flex items-center">
-              {navList.map((item, index) => (
-                (!item.isAuthenticated || authState.isAuthenticated) && (
-                  <React.Fragment key={item.href}>
-                    <li>
-                      <Link
-                        href={item.href}
-                        className={`text-sm font-medium relative ${
-                          isActive(item.href) ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'
-                        }`}
-                      >
-                        {item.text}
-                        {item.href === '/appointments' && hasNewAppointment && (
-                          <span className="absolute -top-1 -right-3 h-2 w-2 bg-red-600 rounded-full"></span>
-                        )}
-                      </Link>
-                    </li>
-                    {index < navList.length - 1 && (
-                      <li className="mx-6 text-gray-300">|</li>
-                    )}
-                  </React.Fragment>
-                )
-              ))}
-            </ul>
-          </nav>
+        <div className="flex gap-2.5">
+          <Link href="/sp/private/view/question/" className="flex flex-col items-center gap-2 min-w-10">
+            <Image
+              src="/icons/history.svg"
+              alt=""
+              width={16}
+              height={16}
+              priority
+            />
+            <span className="text-[10px] leading-none">閲覧履歴</span>
+          </Link>
+          <Link href="/sp/private/view/question/" className="flex flex-col items-center gap-2 min-w-10">
+            <Image
+              src="/icons/favorite.svg"
+              alt=""
+              width={16}
+              height={16}
+              priority
+            />
+            <span className="text-[10px] leading-none">お気に入り</span>
+          </Link>
 
-          {/* Auth Buttons (Desktop) */}
-          <div className="hidden md:flex md:items-center md:space-x-3 ml-8">
-            {showLanguageSelector && <LanguageSelector />}
-            {authState.isAuthenticated && authState.user ? (
-              <>
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    className="rounded-md px-4 py-2 text-base font-medium text-blue-600 hover:bg-blue-50"
-                  >
-                    {t('admin.title')}
-                  </Link>
-                )}
-                <Link
-                  href="/profile"
-                  className="rounded-md px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-50 relative"
-                >
-                  {getFullName(authState.user)}
-                  {hasNewAppointment && (
-                    <span className="absolute -top-0.5 h-2 w-2 bg-red-600 rounded-full"></span>
-                  )}
-                </Link>
-                <Button
-                  variant="primary"
-                  onClick={handleLogout}
-                >
-                  {t('auth.signOut')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
-                >
-                  {t('auth.signIn')}
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
-                >
-                  {t('auth.signUp')}
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="-mr-2 flex md:hidden">
-            <Button
-              variant="ghost"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              type="button"
-              className="inline-flex items-center justify-center p-2 text-gray-400"
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-            >
-              <span className="sr-only">{t('common.openMenu')}</span>
-              {isMenuOpen ? (
-                <svg
-                  className="block h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="block h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              )}
-            </Button>
-          </div>
+          {/* MENU BUTTON */}
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex flex-col items-center gap-2 min-w-10"
+          >
+            <Image
+              src="/icons/menu.svg"
+              alt=""
+              width={16}
+              height={16}
+              priority
+            />
+            <span className="text-[10px] leading-none">メニュー</span>
+          </button>
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state */}
-      {isMenuOpen && (
-        <div className="md:hidden absolute top-20 left-0 right-0 bg-white z-50 shadow-lg" id="mobile-menu">
-          <div className="space-y-1 px-2 pb-3 pt-2">
-            {navList.map((item) => (
-              (!item.isAuthenticated || authState.isAuthenticated) && 
-              (!item.excludeForLawyer || !isLawyer) && (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`block rounded-md px-3 py-2 text-base font-medium ${
-                    isActive(item.href) ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.text}
-                  {item.href === '/appointments' && hasNewAppointment && (
-                    <span className="inline-flex ml-2 h-2 w-2 bg-red-600 rounded-full"></span>
-                  )}
-                </Link>
-              )
-            ))}
-            <hr/>
-            
-            {showLanguageSelector && (
-              <div className="block rounded-md px-3 py-2">
-                <LanguageSelector className="w-full justify-start" />
-              </div>
-            )}
+      {/* MENU OVERLAY */}
+      {open && (
+        <div className="fixed inset-0 z-50 overflow-auto text-base bg-white">
+          <div className="h-[66px] md:h-[90px] bg-white py-2 pl-4 flex items-center">
+            <div className="w-full max-w-[960px] mx-auto flex items-center justify-between pr-2">
+              <button
+                onClick={() => setOpen(false)}
+                className="text-[#639] py-3 text-sm underline md:text-base font-bold  before:border-solid before:border-t-2 before:border-r-2 before:content-[''] before:inline-block before:h-2 before:-translate-y-1/4 before:-rotate-[135deg] before:w-2 before:mr-1 before:border-[#f7723e]"
+              >
+                弁護士ドットコム トップ
+              </button>
 
-            {isAuthenticated ? (
-              <>
-                {isAdmin && (
+              <button
+                onClick={() => setOpen(false)}
+                className="flex flex-col items-center gap-2 min-w-10"
+              >
+                <Image
+                  src="/icons/close.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  priority
+                />
+                <span className="text-[10px] leading-none">閉じる</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-[#F1ECEA]/50 py-4 px-6">
+            <div className="w-full max-w-[1104px] mx-auto">
+              <div className="w-full md:max-w-[66.6666667%] mx-auto space-y-4">
+                <div className="px-6 py-4 bg-white md:px-8 md:py-6">
+                  <p className="text-[10px] md:text-[11px] leading-[1.4] mb-3 text-center">
+                    みんなの法律相談で弁護士に相談するには<br className="md:hidden" />
+                    「弁護士ドットコムID」が必要になります。
+                  </p>
+                  <div className="flex justify-center max-md:flex-col">
+                    <div className="w-full mb-3 md:w-1/3 md:mx-2">
+                      <Link
+                        href="/"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-center w-full bg-[#f7723e] rounded-full text-xs font-bold px-4 py-3 text-white relative after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-white after:top-1/2 after:right-4"
+                      >
+                        新規会員登録
+                        <span className="bg-white text-[#e94a00] rounded-[16px] text-[10px] font-normal ml-2 py-0.5 px-1">
+                          無料
+                        </span>
+                      </Link>
+                    </div>
+                    <div className="w-full mb-3 md:w-1/3 md:mx-2">
+                      <Link
+                        href="/"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-center w-full bg-white border-[#bbb3af] border rounded-full text-xs font-bold px-4 py-3 text-[#262221] relative after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-[#f7723e] after:top-1/2 after:right-4"
+                      >
+                        ログインする
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 bg-white md:px-8 md:py-6">
+                  <p className="text-[10px] md:text-[11px] leading-[1.4] mb-3 text-center">
+                    さらにプレミアムサービスに登録すると、<br className="md:hidden" />
+                    コーヒー1杯分のお値段で専門家の回答が見放題になります。
+                  </p>
+                  <div className="flex justify-center">
+                    <div className="max-w-[400px] w-full md:mx-2">
+                      <Link
+                        href="/"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-center w-full bg-[#f7723e] rounded-full text-xs font-bold px-4 py-3 text-white relative after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-white after:top-1/2 after:right-4 before:size-[14px] before:bg-[url(/icons/link-p.svg)] before:bg-cover before:absolute before:left-4"
+                      >
+                        プレミアムサービスについて見る
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center mb-4">
                   <Link
-                    href="/admin"
-                    className="block rounded-md px-3 py-2 text-base font-medium text-blue-600 hover:bg-blue-50"
-                    onClick={() => setIsMenuOpen(false)}
+                    href="/"
+                    onClick={() => setOpen(false)}
+                    className="text-[#625d5b] bg-[#f0ecec] border border-[#d5d5d5] rounded-full text-[11px] font-semibold py-1 h-9 px-5 w-fit"
                   >
-                    {t('admin.title')}
+                    弁護士ログインはこちら
                   </Link>
-                )}
-                <Link
-                  href="/profile"
-                  className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 relative"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {t('auth.myAccount')}
-                  {hasNewAppointment && (
-                    <span className="inline-flex ml-2 h-2 w-2 bg-red-600 rounded-full"></span>
-                  )}
-                </Link>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    handleLogout()
-                    setIsMenuOpen(false)
-                  }}
-                  className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 justify-start"
-                >
-                  {t('auth.signOut')}
-                </Button>
-              </>
-            ) : (
-              <>
-               <Link
-                 href="/auth/login"
-                 className="block w-full rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
-                 onClick={() => setIsMenuOpen(false)}
-               >
-                  {t('auth.signIn')}
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="inline-block rounded-md bg-amber-500 px-4 py-2 ml-2 text-base font-medium text-white hover:bg-amber-600"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {t('auth.signUp')}
-                </Link>
-              </>
-            )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full max-w-[1104px] mx-auto mt-14 max-md:px-5">
+            <div className="w-full md:max-w-[66.6666667%] mx-auto space-y-4">
+              <div className="overflow-hidden">
+                {list.map((menu, index) => (
+                  <div className="mb-14" key={index}>
+                    <p className="md:text-[18px] font-bold mb-4 leading-[1.4]">
+                      {menu.title}
+                    </p>
+                    <ul className="flex flex-wrap -mx-6 overflow-hidden">
+                      {menu.items.map((item, i) => (
+                        <li className="w-full px-6 md:w-1/2" key={i}>
+                          <Link
+                            href={item.href}
+                            onClick={() => setOpen(false)}
+                            className="p-4 pl-0 flex w-full relative after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-[#f7723e] after:top-1/2 after:right-4 text-base font-bold text-[#005ebb] border-t border-[#e9e5e4] -mt-px"
+                          >
+                            {item.text}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
