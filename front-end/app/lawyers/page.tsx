@@ -5,6 +5,9 @@ import LawyersSidebar from "./components/LawyersSidebar"
 import LawyersIntroduction from "./components/LawyersIntroduction"
 import LawyersField from "./components/LawyersField"
 import LawyersCards from "./components/LawyersCards"
+import LawyersResolved from "./components/LawyersResolved"
+import LawyersSearch from "./components/LawyersSearch"
+import LawyersInformation from "./components/LawyersInformation"
 
 export default function LawyersPage() {
   return (
@@ -18,6 +21,9 @@ export default function LawyersPage() {
             <LawyersIntroduction />
             <LawyersCards />
             <LawyersField />
+            <LawyersResolved />
+            <LawyersSearch />
+            <LawyersInformation />
           </div>
         </div>
       </div>

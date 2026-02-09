@@ -1,11 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const LawyersFieldItem = (({link, title, icon, text, images, total}: {link: string, title: string, icon: string, text: string, images: string[], total: string}) => (
-    <div className="">
-
-    </div>
-))
 
 export default function LawyersField() {
     const fields = [
@@ -87,8 +82,8 @@ export default function LawyersField() {
         },
     ]
     return (
-        <div className="">
-            <h3 className="md:text-[20px] text-[18px] md:py-[14px] py-3 px-6 bg-[#ececec]">分野から探す</h3>
+        <div>
+            <h3 className="md:text-[20px] text-[18px] md:py-[14px] font-bold py-3 px-6 bg-[#ececec]">分野から探す</h3>
             <div className="md:mt-8 mt-6 max-md:px-6 space-y-2.5 mb-4">
                 {fields.map((field, index) => (
                     <Link href={field.link} key={index} className="relative flex justify-between rounded-lg items-center gap-2.5 bg-white border border-[#ededed] md:p-[18px] p-4 after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-[#f7723e] after:top-1/2 after:right-4 md:pr-8 max-md:pr-6">
