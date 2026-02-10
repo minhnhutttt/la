@@ -88,7 +88,7 @@ export default function ArticlesPage() {
         </div>
       </div>
       {/* Articles Content Section */}
-      <div className="w-full max-w-[1144px] mx-auto">
+      <div className="w-full max-w-[1152px] mx-auto">
         <div className="flex flex-wrap">
           <div className="mt-10 mb-6 md:[flex-basis:58.3333333333%] md:max-w-[58.3333333333%] max-md:flex-col flex gap-4">
             <header>
