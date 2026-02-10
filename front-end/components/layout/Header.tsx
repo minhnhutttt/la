@@ -104,7 +104,7 @@ export default function Header() {
       <div className="w-full max-w-[980px] mx-auto flex items-center justify-between">
         <Link href="/" className="flex flex-col items-start">
           <Image
-            src="/images/logo.svg"
+            src="/images/logo.png"
             alt=""
             width={360}
             height={60}

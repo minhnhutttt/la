@@ -8,7 +8,7 @@ export default function Banners() {
                   <Link href="/" className="md:p-6 p-4 grid md:grid-cols-2 max-md:gap-2 items-center justify-center border border-[#ddd]">
                     <span className="space-y-2.5 flex flex-col items-center">
                       <Image
-                        src="/images/logo.svg"
+                        src="/images/logo.png"
                         alt=""
                         width={360}
                         height={60}

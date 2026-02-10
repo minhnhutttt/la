@@ -123,9 +123,28 @@ function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
         </div>
       </div>
 
-      <div className="px-6 md:px-8"> <div className="p-4 bg-[#ecf7f7] flex flex-col items-center gap-3"> 
-        <div className="flex items-center justify-center md:text-[14px] text-[12px] gap-2"> 
-          <p className="flex items-center text-[#0c6969] font-bold gap-1.5 before:size-[14px] before:bg-[url(/icons/active.svg)] before:bg-contain before:bg-center before:bg-no-repeat">現在営業中</p> <p className="text-[#72706e]">{lawyer.actions.time}</p> </div> <div className="flex flex-col gap-3 w-full max-w-[432px] mx-auto"> <Link href={`tel:${lawyer.actions.contact.tel}`} className="md:hidden flex items-center justify-center bg-[linear-gradient(180deg,_#ff8139,_#fa5e06)] rounded-[6px] text-[#fff] text-[clamp(14px,1vw,18px)] p-4 md:p-[20px] font-bold border border-[#d24e10]"> <span className="flex items-center before:size-[17px] gap-2 before:bg-[url(/icons/tel.svg)] before:bg-contain before:bg-center before:bg-no-repeat text-[12px]">電話で問い合わせ</span> </Link> <Link href={lawyer.actions.contact.mail} className="flex items-center justify-center bg-[linear-gradient(180deg,_#fff,_#fafafa)] rounded-[6px] text-[clamp(14px,1vw,18px)] p-4 md:p-[20px] font-bold border border-[#d9d9d9]"> <span className="flex items-center before:size-[17px] gap-2 before:bg-[url(/icons/mail.svg)] before:bg-contain before:bg-center before:bg-no-repeat text-[14px] md:text-[16px]">Webで問い合わせ</span> </Link> <div className="flex items-center gap-2"> <span className="flex-1 h-px bg-[hsla(0,1%,74%,.5)]"></span> <span className="text-[#72706e] font-bold text-[10px]">または</span> <span className="flex-1 h-px bg-[hsla(0,1%,74%,.5)]"></span> </div> <Link href={`tel:${lawyer.actions.contact.tel}`} className="flex gap-3 items-center justify-center max-md:hidden"> <p className="flex items-start gap-2 md:text-[12px] text-[10px] before:size-[18px] before:bg-[url(/icons/tel2.svg)] before:bg-contain before:bg-center before:bg-no-repeat"> 電話で問い合わせ</p> <p className="font-bold md:text-[22px] text-[20px]">{lawyer.actions.contact.tel}</p> </Link> </div> </div> </div>
+      <div className="px-6 md:px-8"> <div className="p-4 bg-[#ecf7f7] flex flex-col items-center gap-3">
+        <div className="flex items-center justify-center md:text-[14px] text-[12px] gap-2">
+          <p className="flex items-center text-[#0c6969] font-bold gap-1.5 before:size-[14px] before:bg-[url(/icons/active.svg)] before:bg-contain before:bg-center before:bg-no-repeat">現在営業中</p> <p className="text-[#72706e]">{lawyer.actions.time}</p>
+        </div> <div className="flex flex-col gap-3 w-full max-w-[432px] mx-auto">
+          <Link href={`tel:${lawyer.actions.contact.tel}`} className="md:hidden flex items-center justify-center bg-[linear-gradient(180deg,_#ff8139,_#fa5e06)] rounded-[6px] text-[#fff] text-[clamp(14px,1vw,18px)] p-4 md:p-[20px] font-bold border border-[#d24e10]">
+            <span className="flex items-center before:size-[17px] gap-2 before:bg-[url(/icons/tel.svg)] before:bg-contain before:bg-center before:bg-no-repeat text-[12px]">電話で問い合わせ</span>
+          </Link>
+          <Link href={lawyer.actions.contact.mail} className="flex items-center justify-center bg-[linear-gradient(180deg,_#fff,_#fafafa)] rounded-[6px] text-[clamp(14px,1vw,18px)] p-4 md:p-[20px] font-bold border border-[#d9d9d9]">
+            <span className="flex items-center before:size-[17px] gap-2 before:bg-[url(/icons/mail.svg)] before:bg-contain before:bg-center before:bg-no-repeat text-[14px] md:text-[16px]">Webで問い合わせ</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="flex-1 h-px bg-[hsla(0,1%,74%,.5)]"></span>
+            <span className="text-[#72706e] font-bold text-[10px]">または</span>
+            <span className="flex-1 h-px bg-[hsla(0,1%,74%,.5)]"></span>
+          </div>
+          <Link href={`tel:${lawyer.actions.contact.tel}`} className="flex gap-3 items-center justify-center max-md:hidden">
+            <p className="flex items-start gap-2 md:text-[12px] text-[10px] before:size-[18px] before:bg-[url(/icons/tel2.svg)] before:bg-contain before:bg-center before:bg-no-repeat"> 電話で問い合わせ</p>
+            <p className="font-bold md:text-[22px] text-[20px]">{lawyer.actions.contact.tel}</p>
+          </Link>
+        </div>
+      </div>
+      </div>
 
       {/* TABS */}
       <div className="grid grid-cols-[auto_1fr] items-center gap-2 px-6 md:px-8 overflow-hidden">
@@ -299,11 +318,11 @@ export default function LawyersCards() {
     },
   ]
 
-    return (
-        <div>
-            {lawyersData.map((lawyer, i) => (
-                <LawyerCard key={i} lawyer={lawyer} />
-            ))}
-        </div>
-    )
+  return (
+    <div>
+      {lawyersData.map((lawyer, i) => (
+        <LawyerCard key={i} lawyer={lawyer} />
+      ))}
+    </div>
+  )
 } 
