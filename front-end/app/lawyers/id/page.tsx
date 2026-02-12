@@ -1,6 +1,7 @@
 'use client'
 
 import ExpandableSection from "@/components/common/ExpandableSection"
+import Tags from "@/components/common/Tag"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
@@ -679,53 +680,30 @@ export default function LawyersPage() {
           <h3 className="md:text-[20px] text-[18px] md:py-[14px] font-bold py-3 px-6 bg-[#ececec] mb-6">弁護士を探す</h3>
           <div className="flex flex-col gap-6 max-xl:px-6">
             <div>
-              <p className="md:text-[16px] text-[14px] font-bold mb-3">弁護士の多い地域で探す</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  '千代田区',
-                  '中央区',
-                  '港区'
-                ].map(text => (
-                  <Link href="#" key={text} className="p-2.5 rounded-[28px] leading-none font-bold border border-[#d9d9d9] md:text-[14px] text-[12px]">{text}</Link>
-                ))}
-              </div>
+              <Tags title="弁護士の多い地域で探す" tags={[
+                { text: "千代田区", href: "#" },
+                { text: "中央区", href: "#" },
+                { text: "港区", href: "#" }
+              ]} />
             </div>
             <div>
-              <p className="md:text-[16px] text-[14px] font-bold mb-3">同じ条件で近隣の弁護士を探す</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  '大宮',
-                  '北大宮',
-                  '大宮区',
-                  'さいたま市',
-                  '埼玉県'
-                ].map(text => (
-                  <Link href="#" key={text} className="p-2.5 rounded-[28px] leading-none font-bold border border-[#d9d9d9] md:text-[14px] text-[12px]">{text}</Link>
-                ))}
-              </div>
+              <Tags title="同じ条件で近隣の弁護士を探す" tags={[
+                { text: "大宮", href: "#" },
+                { text: "北大宮", href: "#" },
+                { text: "大宮区", href: "#" },
+                { text: "さいたま市", href: "#" },
+                { text: "埼玉県", href: "#" },
+              ]} />
             </div>
             <div>
-              <p className="md:text-[16px] text-[14px] font-bold mb-3">同じ地域で分野を変えて探す</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  '借金・債務整理',
-                  '交通事故',
-                  '離婚・男女問題',
-                  '遺産相続',
-                  '労働問題',
-                  '債権回収',
-                  '医療問題',
-                  '詐欺被害・消費者被害',
-                  '国際・外国人問題',
-                  'インターネット問題',
-                  '犯罪・刑事事件',
-                  '不動産・建築',
-                  '企業法務・顧問弁護士',
-                  '税務訴訟・行政事件',
-                ].map(text => (
-                  <Link href="#" key={text} className="p-2.5 rounded-[28px] leading-none font-bold border border-[#d9d9d9] md:text-[14px] text-[12px]">{text}</Link>
-                ))}
-              </div>
+              <Tags title="同じ地域で分野を変えて探す" tags={[
+                { text: "借金・債務整理", href: "#" },
+                { text: "交通事故", href: "#" },
+                { text: "離婚・男女問題", href: "#" },
+                { text: "遺産相続", href: "#" },
+                { text: "労働問題", href: "#" },
+                { text: "債権回収", href: "#" },
+              ]} />
             </div>
           </div>
         </div>

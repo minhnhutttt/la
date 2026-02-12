@@ -1,622 +1,202 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useTranslation } from 'react-i18next';
-import { Loader2, Edit, Check, X, Save } from 'lucide-react';
-import { getQuestionById, getQuestionAnswers, createAnswer, updateQuestion, updateAnswer } from '@/lib/services';
-import { getMyLawyerProfile } from '@/lib/services/lawyers';
-import {Question, Answer, AnswerCreateRequest, QuestionCreateRequest} from '@/lib/types/questions';
-import { useAuthStore } from '@/store/auth-store';
-import {getFullName} from "@/lib/types";
-import UserAvatarIcon from '@/components/UserAvatarIcon';
-import { Button } from '@/components/ui/button';
-import {formatToYYYYMMDD} from "@/lib/utils";
+import Tags from "@/components/common/Tag";
+import Link from "next/dist/client/link";
+import Image from "next/image";
+import { QuestionsArticleType } from "../components/QuestionsArticles";
+import { t } from "i18next";
+import { QuestionSearch } from "../components/QuestionSearch";
 
-export default function QuestionDetailPage({ params }: { params: { id: string } }) {
-  const { t } = useTranslation();
-  const [question, setQuestion] = useState<Question | null>(null);
-  const [answers, setAnswers] = useState<Answer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user, isAuthenticated } = useAuthStore((state) => ({
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-  }));
-  // States for lawyer verification
-  const [isLawyer, setIsLawyer] = useState(false);
-  const [isVerifiedLawyer, setIsVerifiedLawyer] = useState(false);
-  const [lawyerVerificationLoading, setLawyerVerificationLoading] = useState(false);
-  const isClient = isAuthenticated && user?.role !== 'lawyer';
-  const isOwner = isClient && question?.user?.id === user?.id;
+const QuestionPost = ({ images, link, title, desc, count, avatar, time }: QuestionsArticleType) => {
+  return (
+    <div className="border-t border-[#e9e5e4] py-6">
+      <Link href={link} className="flex gap-4">
+        <span className="w-9">
+          {avatar && <Image src={avatar} alt="" width={36} height={36} className="rounded-full size-[36px] object-cover" />}
+        </span>
+        <span className="flex-1 flex flex-col gap-2">
+          <h4 className="text-[#315dbb] md:text-[18px] text-[16px] font-bold">{title}</h4>
+          <span className="md:text-[16px] text-[14px] text-[#716c6b]">{desc}</span>
+          <span className="flex justify-between py-2">
+            <span className="flex items-center gap-3">
+              <span className="flex ml-1.5">
+                {images.map((image, i) => (
+                  <Image src={image} alt="" width={18} height={18} className="md:size-[18px] size-5 rounded-full -ml-1.5" />
+                ))}
+              </span>
+              <span className="space-x-1">
+                <span className="md:text-[13px] text-[11px]">弁護士回答</span>
+                <span className="md:text-[16px] text-[14px] font-bold">{count}</span>
+              </span>
+            </span>
+            <span className="md:text-[12px] text-[11px] text-[#716c6b]">{time}</span>
+          </span>
+        </span>
+      </Link>
+    </div>
+  )
+}
 
-  // States for editing mode
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
-
-  const [newAnswerContent, setNewAnswerContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  
-  // Edit answer states
-  const [editingAnswerId, setEditingAnswerId] = useState<number | null>(null);
-  const [editAnswerContent, setEditAnswerContent] = useState('');
-  const [isUpdatingAnswer, setIsUpdatingAnswer] = useState(false);
-  const [updateAnswerError, setUpdateAnswerError] = useState<string | null>(null);
-
-  // Initialize edit form when question data is loaded
-  useEffect(() => {
-    if (question) {
-      setEditTitle(question.title);
-      setEditContent(question.content);
-    }
-  }, [question]);
-
-  useEffect(() => {
-    const fetchQuestionAndAnswers = async () => {
-      const questionIdStr = params.id;
-      if (!questionIdStr || isNaN(Number(questionIdStr))) {
-        setError(t('answers.invalidId'));
-        setLoading(false);
-        return;
-      }
-      const questionId = parseInt(questionIdStr, 10);
-
-      setLoading(true);
-      setError(null);
-      setQuestion(null);
-      setAnswers([]);
-
-      try {
-        const [questionResponse, answersResponse] = await Promise.all([
-          getQuestionById(questionId),
-          getQuestionAnswers(questionId)
-        ]);
-
-        if (questionResponse && questionResponse.data) {
-          setQuestion(questionResponse.data);
-        } else {
-          console.warn(`No question data found for ID: ${questionId}`);
-        }
-
-        if (answersResponse && answersResponse.data) {
-          setAnswers(answersResponse.data);
-        } else {
-           console.log(`No answers found for question ID: ${questionId}, which might be normal.`);
-           setAnswers([]);
-        }
-
-        if (!questionResponse?.data) {
-             setError(t('answers.notFound'));
-        }
-
-      } catch (err: any) {
-        console.error('Error fetching question details or answers:', err);
-        setError(t('answers.errorLoading') + (err.message ? `: ${err.message}` : ''));
-        setQuestion(null);
-        setAnswers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchQuestionAndAnswers();
-  }, [params.id, t]);
-
-  useEffect(() => {
-    const checkLawyerVerification = async () => {
-      if (isAuthenticated && user?.role === 'lawyer') {
-        setIsLawyer(true);
-        setLawyerVerificationLoading(true);
-        
-        try {
-          const response = await getMyLawyerProfile();
-          if (response && response.data) {
-            setIsVerifiedLawyer(response.data.is_verified);
-          }
-        } catch (error) {
-          console.error('Error checking lawyer verification status:', error);
-        } finally {
-          setLawyerVerificationLoading(false);
-        }
-      } else {
-        setIsLawyer(false);
-        setIsVerifiedLawyer(false);
-      }
-    };
-    
-    checkLawyerVerification();
-  }, [isAuthenticated, user]);
-
-  const handleEnterEditMode = () => {
-    setIsEditMode(true);
-    setEditTitle(question?.title || '');
-    setEditContent(question?.content || '');
-    setEditError(null);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-    setEditError(null);
-  };
-
-  const handleSubmitEdit = async () => {
-
-    if (!isOwner || !question || isEditing) {
-      return;
-    }
-
-    // Validate title
-    if (!editTitle.trim()) {
-      setEditError(t('questions.titleRequired'));
-      return;
-    } else if (editTitle.trim().length < 15) {
-      setEditError(t('questions.titleMinLength', { length: 15 }));
-      return;
-    }
-
-    // Validate content
-    if (!editContent.trim()) {
-      setEditError(t('questions.contentRequired'));
-      return;
-    } else if (editContent.trim().length < 30) {
-      setEditError(t('questions.contentMinLength', { length: 30 }));
-      return;
-    }
-
-    setIsEditing(true);
-    setEditError(null);
-
-    const questionId = question.id;
-    const updateData: Partial<QuestionCreateRequest> = {
-      title: editTitle.trim(),
-      content: editContent.trim(),
-    };
-
-    try {
-      const response = await updateQuestion(questionId, updateData);
-      const updatedQuestion = response.data;
-      
-      // Ensure user information is preserved when updating the question
-      setQuestion({
-        ...updatedQuestion,
-        user: question.user // Preserve the original user information
-      });
-      setIsEditMode(false);
-    } catch (err: any) {
-      console.error('Error updating question:', err);
-      const message = err.response?.data?.message || err.message || t('questions.updateError');
-      setEditError(message);
-    } finally {
-      setIsEditing(false);
-    }
-  };
-
-  const handleEditAnswer = (answer: Answer) => {
-    setEditingAnswerId(answer.id);
-    setEditAnswerContent(answer.content);
-    setUpdateAnswerError(null);
-  };
-
-  const handleCancelEditAnswer = () => {
-    setEditingAnswerId(null);
-    setEditAnswerContent('');
-    setUpdateAnswerError(null);
-  };
-
-  const handleUpdateAnswer = async () => {
-
-    if (!editingAnswerId || !editAnswerContent.trim() || isUpdatingAnswer) {
-      return;
-    }
-
-    setIsUpdatingAnswer(true);
-    setUpdateAnswerError(null);
-
-    try {
-      const response = await updateAnswer(editingAnswerId, editAnswerContent.trim());
-      const updatedAnswer = response.data;
-      
-      // Find the original answer to preserve its lawyer information if needed
-      const originalAnswer = answers.find(answer => answer.id === editingAnswerId);
-      
-      // Ensure the updated answer maintains the lawyer user_id connection
-      if (updatedAnswer && originalAnswer) {
-        // Make sure the lawyer property with user_id is preserved
-        if (!updatedAnswer.lawyer || !updatedAnswer.lawyer.user_id) {
-          updatedAnswer.lawyer = {
-            ...updatedAnswer.lawyer,
-            ...originalAnswer.lawyer
-          };
-        }
-      }
-      
-      // Update the answer in the list
-      setAnswers(prevAnswers => 
-        prevAnswers.map(answer => 
-          answer.id === editingAnswerId ? updatedAnswer : answer
-        )
-      );
-      
-      // Exit edit mode
-      setEditingAnswerId(null);
-      setEditAnswerContent('');
-    } catch (err: any) {
-      console.error('Error updating answer:', err);
-      const message = err.response?.data?.message || err.message || t('answers.updateError');
-      setUpdateAnswerError(message);
-    } finally {
-      setIsUpdatingAnswer(false);
-    }
-  };
-
-  const handleSubmitAnswer = async () => {
-
-    if (!isLawyer || !newAnswerContent.trim() || isSubmitting || !question) {
-      return;
-    }
-
-    const questionId = question.id;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    const answerData: AnswerCreateRequest = {
-      content: newAnswerContent.trim(),
-      question_id: questionId,
-    };
-
-    try {
-      const response = await createAnswer(answerData);
-
-      // Get the new answer from the response and ensure it has the lawyer data needed for edit functionality
-      const newAnswer = response.data;
-      
-      // Make sure the newAnswer has the required lawyer information including user_id
-      // If the API doesn't return complete lawyer info, we'll add it based on current user
-      if (newAnswer && (!newAnswer.lawyer || !newAnswer.lawyer.user_id)) {
-        // Create a properly typed lawyer object with existing data or defaults
-        newAnswer.lawyer = {
-          ...newAnswer.lawyer,
-          user_id: user?.id || 0,
-          // Construct the full_name from user's first and last name
-          full_name: (user?.first_name && user?.last_name) ? 
-                    `${user.first_name} ${user.last_name}` : t('answers.unknownUser'),
-          profile_image: user?.profile_image || ''
-        };
-      }
-
-      setAnswers((prevAnswers) => [newAnswer, ...prevAnswers]);
-      setNewAnswerContent('');
-    } catch (err: any) {
-
-      const message = err.response?.data?.message || err.message || t('answers.answerSubmitError');
-      setSubmitError(message);
-
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[300px] items-center justify-center py-12">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-   if (error) {
-     return <div className="text-center py-12 text-red-500">{error}</div>;
-   }
-
-  if (!question) {
-    return <div className="text-center py-12 text-gray-500">{t('answers.notFound')}</div>;
-  }
+export default function QuestionDetailPage() {
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Link
-          href="/questions"
-          className="flex items-center text-blue-600 hover:text-blue-800"
-        >
-           <svg
-            className="mr-2 h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
-          {t('answers.backLink')}
-        </Link>
-      </div>
-
-      <div>
-        {!isEditMode ? (
-          <>
-            <div className="mb-2 flex items-start justify-between">
-              <h1 className="text-2xl font-bold mr-4">{question.title}</h1>
-              <div className="flex items-center">
-                {isOwner && (
-                  <Button
-                    variant="ghost"
-                    className="mr-2 p-1 text-gray-500 hover:text-blue-600"
-                    onClick={handleEnterEditMode}
-                    aria-label="Edit question"
-                    size="sm"
-                  >
-                    <Edit className="h-5 w-5" />
-                  </Button>
-                )}
-                <span
-                  className={`flex-shrink-0 rounded-full px-3 py-1 text-xs ${
-                    question.status === "open"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {t(`questions.status.${question.status}`)}
-                </span>
+    <div className="w-full max-md:px-6">
+      <div className="w-full max-w-[1104px] mx-auto">
+        <div className="flex flex-start flex-wrap max-md:flex-col">
+          <div className="md:mt-10 md:[flex-basis:66.6666666667%] md:max-w-[66.6666666667%] flex-col flex mb-[56px] md:px-6">
+            <div className="border-b border-[#f0ebe9] pb-[56px] mb-[56px]">
+              <div className="mb-6">
+                <ul className="flex md:text-[13px] text-[11px] text-[#315dbb]">
+                  <li className="">
+                    <Link href="/questions">法律相談トップ</Link>
+                  </li>
+                  <li className="before:inline-block before:h-[8px] before:ml-[4px] before:mr-[10px] before:-translate-y-[20%] before:rotate-45 before:w-[8px] before:border-t before:border-r before:border-[#bbb3af]">
+                    <Link href="#">離婚・男女問題</Link>
+                  </li>
+                </ul>
               </div>
-            </div>
-
-            <div className="mb-4 flex items-center text-sm text-gray-500">
-              <span className="mr-4">
-                {t('answers.postedBy')}{' '}
-                {question.is_anonymous ? t('answers.anonymous') : getFullName(question.user) || t('answers.unknownUser')}
-              </span>
-              <span>{formatToYYYYMMDD(question.created_at)}</span>
-            </div>
-
-            <div className="mt-12 mb-12 border-b border-gray-200 pb-6">
-              <p className="text-gray-800 whitespace-pre-wrap text-lg leading-[1.3] break-words overflow-wrap-anywhere">
-                {question.content}
-              </p>
-            </div>
-          </>
-        ) : (
-          <div className="mb-6 border-b border-gray-200 pb-6">
-            <h2 className="mb-4 text-xl font-semibold">{t('questions.editQuestion')}</h2>
-            
-            <div className="mb-4">
-              <label className="block mb-1 font-medium">{t('questions.title')}</label>
-              <input
-                type="text"
-                className={`w-full rounded-md border p-2 focus:border-blue-500 focus:outline-none ${editError ? 'border-red-500' : 'border-gray-300'}`}
-                value={editTitle}
-                onChange={(e) => {
-                  setEditTitle(e.target.value);
-                  if (editError) setEditError(null);
-                }}
-                disabled={isEditing}
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block mb-1 font-medium">{t('questions.content')}</label>
-              <textarea
-                className={`w-full rounded-md border p-2 focus:border-blue-500 focus:outline-none ${editError ? 'border-red-500' : 'border-gray-300'}`}
-                rows={5}
-                value={editContent}
-                onChange={(e) => {
-                  setEditContent(e.target.value);
-                  if (editError) setEditError(null);
-                }}
-                disabled={isEditing}
-              ></textarea>
-            </div>
-            
-            {editError && (
-              <p className="mb-4 text-sm text-red-600">{editError}</p>
-            )}
-            
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="primary"
-                onClick={handleSubmitEdit}
-                disabled={isEditing}
-                isLoading={isEditing}
-                className="px-4 py-2"
-              >
-                {!isEditing && <Check className="mr-2 h-4 w-4" />}
-                {t('questions.saveChanges')}
-              </Button>
-              
-              <Button
-                variant="secondary"
-                onClick={handleCancelEdit}
-                disabled={isEditing}
-                className="px-4 py-2"
-              >
-                <X className="mr-2 h-4 w-4" />
-                {t('questions.cancel')}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="mb-8">
-           <h2 className="mb-4 text-xl font-semibold">
-            {answers.length === 1 ? t('answers.answerSingular') : t('answers.answerPlural', {number: answers.length})}
-          </h2>
-          
-          {!isAuthenticated ? (
-            <div className="text-center py-8 bg-gray-50 border border-gray-200 rounded-lg">
-              <div className="text-lg font-medium text-gray-600 mb-2">
-                {t('answers.loginRequired')}
-              </div>
-              <div className="mt-4">
-                <Link href="/auth/login" className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                  {t('common.login')}
-                </Link>
-              </div>
-            </div>
-          ) : answers.length > 0 ? (
-            answers.map((answer) => (
-              <div
-                key={answer.id}
-                className="mb-4 rounded-lg bg-gray-50 p-4"
-              >
-                {/* Avatar + tên thôi */}
-                <div className="mb-2 flex items-center justify-between">
-                  <Link href={`/lawyers/${answer.lawyer.id}`} className="flex items-center">
-                    {answer.lawyer.profile_image
-                      ? <UserAvatarIcon profileImage={answer.lawyer.profile_image} />
-                      : (
-                        <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                          {answer.lawyer.full_name?.substring(0, 2).toUpperCase() || "LA"}
-                        </div>
-                      )
-                    }
-                    <div className="ml-3">
-                      <p className="font-medium text-gray-900 hover:text-blue-600">
-                        {answer.lawyer.full_name || t('answers.unknownUser')} <span className="font-normal text-sm">弁護士</span>
-                      </p>
-                      {answer.lawyer.office_name && (
-                        <p className="text-sm text-gray-500">{answer.lawyer.office_name}</p>
-                      )}
-                    </div>
-                  </Link>
-                  
-                  {/* Edit button - visible only on mobile and when applicable */}
-                  {isLawyer && user?.id === answer.lawyer.user_id && editingAnswerId !== answer.id && (
-                    <Button
-                      variant="ghost"
-                      className="p-1 text-gray-500 hover:text-blue-600 md:hidden"
-                      onClick={() => handleEditAnswer(answer)}
-                      aria-label="Edit answer"
-                      size="sm"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
+              <div className="">
+                <h1 className="md:text-[27px] text-[20px] font-bold mb-6">出会い喫茶で知り合った男性と会って泊まりたいと言われ不快、彼の素性を知りたい</h1>
+                <div className="flex mb-6 flex items-center md:text-[13px] text-[11px] text-[#bbb3af] gap-3">
+                  <span>公開日： 2025年07月23日</span>
+                  <span>相談日：2025年07月08日</span>
                 </div>
-
-                {/* Nội dung hoặc textarea edit */}
-                {editingAnswerId === answer.id ? (
-                  <div>
-                    <textarea
-                      className={`mb-2 w-full rounded-md border p-3 focus:border-blue-500 focus:outline-none ${updateAnswerError ? 'border-red-500' : 'border-gray-300'}`}
-                      rows={5}
-                      value={editAnswerContent}
-                      onChange={(e) => {
-                        setEditAnswerContent(e.target.value);
-                        if (updateAnswerError) setUpdateAnswerError(null);
-                      }}
-                      disabled={isUpdatingAnswer}
-                    />
-                    {updateAnswerError && (
-                      <p className="mb-3 text-sm text-red-600">{updateAnswerError}</p>
-                    )}
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="primary"
-                        onClick={handleUpdateAnswer}
-                        disabled={isUpdatingAnswer || !editAnswerContent.trim()}
-                        isLoading={isUpdatingAnswer}
-                        className="px-4 py-2"
-                      >
-                        {!isUpdatingAnswer && <Save className="mr-2 h-4 w-4" />}
-                        {t('answers.saveAnswer')}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={handleCancelEditAnswer}
-                        disabled={isUpdatingAnswer}
-                        className="px-4 py-2"
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        {t('answers.cancel')}
-                      </Button>
+                <div className="flex mb-6">
+                  <span className="flex items-center gap-4">
+                    <Image src="/images/1601175_1.png" alt="" width={18} height={18} className="rounded-full size-[18px] object-cover" />
+                    <span className="flex">
+                      <span className="md:text-[13px] text-[11px]">
+                        <span className="md:text-[16px] text-[14px] font-bold">1</span>
+                        弁護士
+                      </span>
+                      <span className="md:text-[13px] text-[11px] before:content-['/'] before:text-[#bbb3af] before:px-1.5">
+                        <span className="md:text-[16px] text-[14px] font-bold">55</span>
+                        回答
+                      </span>
+                    </span>
+                  </span>
+                </div>
+                <div>
+                  <p className="md:text-[18px] text-[16px] leading-[1.8] mb-6">
+                    【相談の背景】<br />
+                    私は出会い喫茶で男性とお茶カラオケ食事に付き合い3000円をいただいています。ある日知り合った男性がお金を払うならパスと言うからお金なしでお茶で出ようと言って出ました。彼は「あそこにいる女の子はギャルばっかりで、君は違うよと言うのです。お金払うなんて変じゃん。」と言っていました。いろいろとおしゃべりをして連絡先を交換しました。彼はともで登録しといてと言ってきました。私は彼のことがとても気に入ったので、本名や職場などを知りたいのですが、彼の様子を見ていると言いたくなさそうです。やはり出会い喫茶に来るような女には、素性を明かしたくないのでしょうか。私は遠方から来ていてホテルを取っていたのですが、お茶の後晩御飯を食べた後で一緒に泊まりたいと言われたのでお断りしました。彼はお金を払うのは変態だと言いますが、ただの体目当てだったのでしょうか？<br />
+                    <br />
+                    【質問1】<br />
+                    私が彼に名前など素性をしつこく聞いたら法的な問題になるでしょうか？
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <span className="md:text-[12px] text-[11px]">
+                      1448546さんの相談
+                    </span>
+                    <Image src="/images/1601175_1.png" alt="" width={18} height={18} className="rounded-full size-[18px] object-cover" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mb-12">
+              <p className="md:text-[18px] text-[16px] font-bold mb-6">回答タイムライン</p>
+              <div className="border border-[#e9e5e4] rounded-lg">
+                <div className="md:p-12 p-6 ">
+                  <div className="flex gap-1.5 text-[#716c6b] mb-6">
+                    <span>弁護士ランキング</span>
+                    <span className="font-bold">埼玉県1位</span>
+                  </div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <figure>
+                      <Image src="/images/1601175_1.png" alt="" width={150} height={200} className="w-[70px] rounded-lg" />
+                    </figure>
+                    <div className="text-[#315dbb]">
+                      <Link href="#" className="md:text-[20px] text-[18px] font-bold">岡村 茂樹 <span className="md:text-[16px] taext-[14px] ml-2">弁護士</span></Link>
+                      <ul className="flex items-center flex-wrap md:text-[12px] text-[11px] before:size-[14px] before:bg-[url(/icons/location-line.svg)] before:bg-contain before:mr-1 before:bg-contain before:bg-no-repeat">
+                        <li><Link href="#">埼玉</Link></li>
+                        <li className="before:inline-block before:h-[8px] before:ml-[4px] before:mr-[10px] before:-translate-y-[20%] before:rotate-45 before:w-[8px] before:border-t before:border-r before:border-[#bbb3af]"><Link href="#">さいたま市</Link></li>
+                        <li className="before:inline-block before:h-[8px] before:ml-[4px] before:mr-[10px] before:-translate-y-[20%] before:rotate-45 before:w-[8px] before:border-t before:border-r before:border-[#bbb3af]"><Link href="#">浦和区</Link></li>
+                        <li className="before:inline-block before:h-[8px] before:ml-[4px] before:mr-[10px] before:-translate-y-[20%] before:rotate-45 before:w-[8px] before:border-t before:border-r before:border-[#bbb3af]"><Link href="#">離婚・男女問題</Link></li>
+                      </ul>
                     </div>
                   </div>
-                ) : (
-                  <p className="mt-3 mb-2 text-gray-800 text-lg leading-[1.3]">
-                    {answer.content}
-                  </p>
-                )}
-
-                {/* Desktop edit button and date info */}
-                <div className="mt-2 flex justify-end items-center space-x-2 text-sm text-gray-500">
-                  {/* Edit button - visible only on desktop and when applicable */}
-                  {isLawyer && user?.id === answer.lawyer.user_id && editingAnswerId !== answer.id && (
-                    <Button
-                      variant="ghost"
-                      className="p-1 text-gray-500 hover:text-blue-600 hidden md:flex"
-                      onClick={() => handleEditAnswer(answer)}
-                      aria-label="Edit answer"
-                      size="sm"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <span className="hidden md:inline">{formatToYYYYMMDD(answer.created_at)}</span>
-                  
-                  {/* Mobile date display at bottom-right */}
-                  <span className="md:hidden">{formatToYYYYMMDD(answer.created_at)}</span>
+                  <div className="">
+                    <div className="relative mb-6">
+                      <p className="md:text-[18px] text-[16px] line-clamp-6 [filter:blur(3px)_opacity(60%)]">
+                        みんなの法律相談には、100万件以上の様々な分野の相談と、現役の弁護士の回答が投稿されています。ご自身だけでは対処することがむずかしい法律分野のトラブルについて、具体的な対応方法や知識などを知ることができます。悩んでいるのはあなただけではありません。専門家の回答でいますぐ問題解決へ。
+                      </p>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Link href="/" className="relative flex items-center justify-center border border-[#f36623] font-bold [box-shadow:0_2px_3px_rgba(38,_34,_33,_.08)] rounded-full w-full text-white max-w-[400px] mx-auto py-4 md:py-4 px-5 md:px-8 bg-[#f36623] md:text-[18px] text-[16px] after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-white after:top-1/2 after:right-4">閲覧履歴をもっと見る
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="text-right text-[#bbb3af] md:text-[12px] text-[11px]">
+                      2025年07月08日 08時10分
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-center border-t border-[#e9e5e4]">
+                  <Link href="#" className="flex justify-center items-center gap-2 relative w-full md:text-[16px] text-[14px] font-bold text-[#315dbb] px-6 after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:border-[#f7723e] py-6">岡村 茂樹 弁護士のプロフィールを見る</Link>
                 </div>
               </div>
-            ))
-          ) : (
-             <div className="text-center py-6 text-gray-500">
-              {t('answers.noAnswersYet')}
+              <div className="border border-[#ededed] bg-[#fbf9f8] md:p-5 p-4 rounded-md md:text-[14px] text-[12px] text-[#716c6b]">
+                この投稿は、2025年07月時点の情報です。<br />
+                ご自身の責任のもと適法性・有用性を考慮してご利用いただくようお願いいたします。
+              </div>
             </div>
-          )}
+            <div className="">
+              <p className="md:text-[18px] text-[16px] font-bold mb-6">回答タイムライン</p>
+              <div className="border-b border-[#e9e5e4]">
+                <QuestionPost avatar="/images/1601175_1.png" images={['/images/1601175_1.png', '/images/1601175_1.png']} link="#" title="恋愛感情がある素性がわかっている男性から受け取る行為" desc="【相談の背景】私は友達に誘われて、友達と一緒に出会い喫茶に何回か行っています。私は今までお茶やカラオケに男性と一緒に行って、交通費として3000円を受け取ったこともありますが、食事代を相手に払ってもらうだけでお金をもらっていないこともありました。以前知り合った男性と3回食事で会いました。この男性は体の関係を持つときは女性に２万渡していると言うのです" count="2" time=" 2024年07月02日" />
+                <QuestionPost avatar="/images/1601175_1.png" images={['/images/1601175_1.png', '/images/1601175_1.png']} link="#" title="恋愛感情がある素性がわかっている男性から受け取る行為" desc="【相談の背景】私は友達に誘われて、友達と一緒に出会い喫茶に何回か行っています。私は今までお茶やカラオケに男性と一緒に行って、交通費として3000円を受け取ったこともありますが、食事代を相手に払ってもらうだけでお金をもらっていないこともありました。以前知り合った男性と3回食事で会いました。この男性は体の関係を持つときは女性に２万渡していると言うのです" count="2" time=" 2024年07月02日" />
+                <QuestionPost avatar="/images/1601175_1.png" images={['/images/1601175_1.png', '/images/1601175_1.png']} link="#" title="恋愛感情がある素性がわかっている男性から受け取る行為" desc="【相談の背景】私は友達に誘われて、友達と一緒に出会い喫茶に何回か行っています。私は今までお茶やカラオケに男性と一緒に行って、交通費として3000円を受け取ったこともありますが、食事代を相手に払ってもらうだけでお金をもらっていないこともありました。以前知り合った男性と3回食事で会いました。この男性は体の関係を持つときは女性に２万渡していると言うのです" count="2" time=" 2024年07月02日" />
+              </div>
+            </div>
+            <div className="flex justify-center my-[56px]">
+              <Link href="/" className="relative flex items-center justify-center gap-2 border border-[#bbb3af] font-bold [box-shadow:0_2px_3px_rgba(38,_34,_33,_.08)] rounded-full w-full max-w-[400px] mx-auto py-4 md:py-4 px-5 md:px-8 bg-white md:text-[18px] text-[16px]">
+                新しく相談をする <span className="text-[#f7723e] md:text-[14px] text-[12px]">無料</span>
+              </Link>
+            </div>
+            <div className="flex justify-between gap-5">
+              <Link href="#" className="flex justify-start relative w-full md:text-[18px] text-[16px] font-bold text-[#315dbb] py-2.5 px-6 before:absolute before:border-t-[2px] before:border-r-[2px] before:h-2 before:w-2 before:-rotate-[135deg] before:-translate-y-1/2 before:border-[#f7723e] before:top-1/2 before:left-3">子どもの車内置き去りについて</Link>
+              <Link href="#" className="flex justify-end relative w-full md:text-[18px] text-[16px] font-bold text-[#315dbb] py-2.5 px-6 after:absolute after:border-t-[2px] after:border-r-[2px] after:h-2 after:w-2 after:rotate-45 after:-translate-y-1/2 after:border-[#f7723e] after:top-1/2 after:right-3">水虫の薬をあげた件の告訴リスク</Link>
+            </div>
+            <div className="flex justify-center my-[56px]">
+              <Link href="/" className="relative flex items-center justify-center gap-2 border border-[#bbb3af] font-bold [box-shadow:0_2px_3px_rgba(38,_34,_33,_.08)] rounded-full w-full max-w-[400px] mx-auto py-4 md:py-4 px-5 md:px-8 bg-white md:text-[18px] text-[16px] before:absolute before:border-t-[2px] before:border-r-[2px] before:h-2 before:w-2 before:-rotate-[135deg] before:-translate-y-1/2 before:border-[#f7723e] before:top-1/2 before:left-5">
+                法律相談トップへ
+              </Link>
+            </div>
+            <div className="my-[56px]">
+              <Tags title="もっとお悩みに近い相談を探す" tags={[
+                { text: "盗撮 自主", href: "#" },
+                { text: "婚活 既婚者", href: "#" },
+                { text: "口外禁止条項", href: "#" },
+                { text: "元カレ 返してくれない", href: "#" },
+                { text: "兄 性的虐待", href: "#" },
+                { text: "盗撮ハンター", href: "#" },
+                { text: "公園 禁止", href: "#" },
+                { text: "救急車 サイレン", href: "#" },
+                { text: "不倫 暴露投稿", href: "#" },
+                { text: "レビュー 星1", href: "#" },
+              ]} />
+            </div>
+            <div className="">
+              <QuestionSearch />
+            </div>
+          </div>
+          <div className="md:[flex-basis:33.3333333333%] md:mt-10 md:max-w-[33.3333333333%] px-3 md:px-6 space-y-6 max-md:hidden">
+            <Tags title="もっとお悩みに近い相談を探す" tags={[
+              { text: "盗撮 自主", href: "#" },
+              { text: "婚活 既婚者", href: "#" },
+              { text: "口外禁止条項", href: "#" },
+              { text: "元カレ 返してくれない", href: "#" },
+              { text: "兄 性的虐待", href: "#" },
+              { text: "盗撮ハンター", href: "#" },
+              { text: "公園 禁止", href: "#" },
+              { text: "救急車 サイレン", href: "#" },
+              { text: "不倫 暴露投稿", href: "#" },
+              { text: "レビュー 星1", href: "#" },
+            ]} />
+          </div>
         </div>
+      </div>
+      <div className="mx-auto max-w-7xl px-6 py-12 flex justify-center">
 
-        {isLawyer && (
-            <div>
-              <h3 className="mb-4 text-lg font-semibold">{t('answers.yourAnswer', {name: user?.first_name})}</h3>
-              
-              {lawyerVerificationLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" /> 
-                  <span className="ml-2 text-gray-500">{t('common.loading')}</span>
-                </div>
-              ) : isVerifiedLawyer ? (
-                <>
-                  <textarea
-                    className={`mb-2 w-full rounded-md border p-3 focus:border-blue-500 focus:outline-none ${submitError ? 'border-red-500' : 'border-gray-300'}`}
-                    rows={5}
-                    placeholder={t('answers.answerPlaceholder')}
-                    value={newAnswerContent}
-                    onChange={(e) => {
-                      setNewAnswerContent(e.target.value);
-                      if (submitError) setSubmitError(null);
-                    }}
-                    disabled={isSubmitting}
-                  ></textarea>
-                  {submitError && (
-                    <p className="mb-3 text-sm text-red-600">{submitError}</p>
-                  )}
-                  <Button
-                    variant="primary"
-                    onClick={handleSubmitAnswer}
-                    disabled={isSubmitting || !newAnswerContent.trim()}
-                    isLoading={isSubmitting}
-                    className="px-4 py-2"
-                  >
-                    {t('answers.submitAnswer')}
-                  </Button>
-                </>
-              ) : (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
-                  <p>{t('answers.verificationRequired') || 'Your lawyer account must be verified before you can answer questions. Please wait for an administrator to verify your account.'}  </p>
-                </div>
-              )}
-            </div>
-        )}
       </div>
     </div>
   );
