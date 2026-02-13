@@ -7,6 +7,8 @@ import { QuestionsArticleType } from "../components/QuestionsArticles";
 import { t } from "i18next";
 import { QuestionSearch } from "../components/QuestionSearch";
 import { QuestionAbout } from "../components/QuestionAbout";
+import PickupLawyers from "@/components/search/PickupLawyers";
+import SearchPrefecture from "@/components/search/SearchPrefecture";
 
 const QuestionPost = ({ images, link, title, desc, count, avatar, time }: QuestionsArticleType) => {
   return (
@@ -176,12 +178,10 @@ export default function QuestionDetailPage() {
                 { text: "レビュー 星1", href: "#" },
               ]} />
             </div>
-            <div className="">
               <QuestionSearch />
-            </div>
-            <div className="">
               <QuestionAbout />
-            </div>
+              <PickupLawyers />
+              <SearchPrefecture />
           </div>
           <div className="md:[flex-basis:33.3333333333%] md:mt-10 md:max-w-[33.3333333333%] px-3 md:px-6 space-y-6 max-md:hidden">
             <Tags title="もっとお悩みに近い相談を探す" tags={[
